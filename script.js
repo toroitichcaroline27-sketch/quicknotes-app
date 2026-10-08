@@ -2,38 +2,61 @@
 const noteForm = document.querySelector('#note-form');
 const noteInput = document.querySelector('#note-input');
 const noteCategory = document.querySelector('#note-category');
+const searchInput = document.querySelector('#search-input');
 const notesList = document.querySelector('#notes-list');
 const noteCount = document.querySelector('#note-count');
 const errorMessage = document.querySelector('#error-message');
+const clearAllBtn = document.querySelector('#clear-all-btn');
 
-// Data Storage Array
-let notes = [];
+// Load initial notes array from localStorage
+let notes = JSON.parse(localStorage.getItem('quicknotes_data')) || [];
 
-// Update Note Counter Display
-function updateNoteCount() {
-  const count = notes.length;
-  if (count === 0) {
+// Save notes to localStorage
+function saveNotes() {
+  localStorage.setItem('quicknotes_data', JSON.stringify(notes));
+}
+
+// Dynamic Counter Update
+function updateNoteCount(displayCount = notes.length) {
+  if (displayCount === 0) {
     noteCount.textContent = 'You have no notes yet.';
-  } else if (count === 1) {
+  } else if (displayCount === 1) {
     noteCount.textContent = 'You have 1 note.';
   } else {
-    noteCount.textContent = `You have ${count} notes.`;
+    noteCount.textContent = `You have ${displayCount} notes.`;
   }
 }
 
-// Delete Note Function
+// Single Note Removal
 function deleteNote(id) {
   notes = notes.filter((note) => note.id !== id);
+  saveNotes();
   render();
 }
 
-// Rebuild and Render Notes List
+// Main Render Function
 function render() {
   notesList.textContent = '';
-  updateNoteCount();
+  const query = searchInput.value.trim().toLowerCase();
 
-  notes.forEach((note) => {
-    // Create card wrapper
+  // Filter notes based on search query
+  const filteredNotes = notes.filter((note) =>
+    note.text.toLowerCase().includes(query)
+  );
+
+  updateNoteCount(filteredNotes.length);
+
+  // Handle empty search results
+  if (filteredNotes.length === 0 && query !== '') {
+    const noResultItem = document.createElement('li');
+    noResultItem.className = 'empty-search-msg';
+    noResultItem.textContent = 'No notes match your search.';
+    notesList.appendChild(noResultItem);
+    return;
+  }
+
+  // Render cards
+  filteredNotes.forEach((note) => {
     const li = document.createElement('li');
     li.className = `note-card category-${note.category.toLowerCase()}`;
 
@@ -46,12 +69,12 @@ function render() {
     categoryTag.textContent = note.category;
     topBar.appendChild(categoryTag);
 
-    // Note Body Text
+    // Note Text (textContent prevents XSS)
     const bodyText = document.createElement('p');
     bodyText.className = 'note-body';
     bodyText.textContent = note.text;
 
-    // Bottom Bar (Timestamp & Delete Button)
+    // Bottom Bar (Timestamp & Action)
     const bottomBar = document.createElement('div');
     bottomBar.className = 'note-bottom-bar';
 
@@ -67,7 +90,6 @@ function render() {
     bottomBar.appendChild(timeSpan);
     bottomBar.appendChild(deleteBtn);
 
-    // Assemble components into card
     li.appendChild(topBar);
     li.appendChild(bodyText);
     li.appendChild(bottomBar);
@@ -76,14 +98,14 @@ function render() {
   });
 }
 
-// Add Note Handler with Validation
+// Add Note Handler
 noteForm.addEventListener('submit', (e) => {
   e.preventDefault();
 
   const textValue = noteInput.value.trim();
   const categoryValue = noteCategory.value;
 
-  // Validation Checks
+  // Input Validation
   if (!textValue) {
     errorMessage.textContent = 'Please type a note first.';
     return;
@@ -105,8 +127,27 @@ noteForm.addEventListener('submit', (e) => {
   };
 
   notes.unshift(newNote);
+  saveNotes();
   render();
 
-  // Reset input field
   noteInput.value = '';
 });
+
+// Search Input Listener
+searchInput.addEventListener('input', render);
+
+// Bonus: Clear All Notes
+if (clearAllBtn) {
+  clearAllBtn.addEventListener('click', () => {
+    if (notes.length === 0) return;
+
+    if (confirm('Delete all notes?')) {
+      notes = [];
+      saveNotes();
+      render();
+    }
+  });
+}
+
+// Initial render on load
+render();

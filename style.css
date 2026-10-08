@@ -123,6 +123,28 @@ button:hover {
 
 /* Search Box & Counters */
 .search-box {
+    /* Search Box Container */
+.search-box {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+#clear-all-btn {
+  background-color: #ef4444;
+  white-space: nowrap;
+}
+
+#clear-all-btn:hover {
+  background-color: #dc2626;
+}
+
+.empty-search-msg {
+  color: #64748b;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem 0;
+}
   margin-bottom: 1rem;
 }
 
